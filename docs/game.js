@@ -1442,6 +1442,18 @@ document.querySelectorAll(".touch-button").forEach((button) => {
   button.addEventListener("contextmenu", (event) => event.preventDefault());
 });
 
+["contextmenu", "selectstart", "dragstart"].forEach((eventName) => {
+  window.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
+});
+
+document.addEventListener("touchstart", (event) => {
+  if (event.touches.length > 1) event.preventDefault();
+}, { passive: false });
+
+document.addEventListener("touchmove", (event) => {
+  event.preventDefault();
+}, { passive: false });
+
 window.addEventListener("blur", clearInputState);
 window.addEventListener("keydown", keyDown);
 window.addEventListener("keyup", keyUp);
