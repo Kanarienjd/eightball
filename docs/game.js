@@ -209,6 +209,27 @@ function writeSave(save) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(save));
 }
 
+function supportedPlatformAt(x, width, preferredY = Infinity) {
+  const centerX = x + width / 2;
+  const candidates = platforms.filter(
+    (platform) => centerX >= platform.x && centerX <= platform.x + platform.w
+  );
+  if (Number.isFinite(preferredY)) {
+    const exact = candidates.find((platform) => Math.abs(platform.y - preferredY) <= 4);
+    if (exact) return exact;
+  }
+  return candidates
+    .filter((platform) => platform.y >= preferredY - 4)
+    .sort((a, b) => a.y - b.y)[0] || candidates.sort((a, b) => a.y - b.y)[0];
+}
+
+function placeOnPlatform(body, preferredY = GROUND) {
+  const platform = supportedPlatformAt(body.x, body.w, preferredY);
+  body.y = (platform?.y || GROUND) - body.h;
+  body.vy = 0;
+  body.grounded = true;
+}
+
 function resetWorld(useCheckpoint = true) {
   keys.clear();
   pressed.clear();
@@ -219,10 +240,7 @@ function resetWorld(useCheckpoint = true) {
   state.save = save;
   player.h = player.standingH;
   player.x = save.checkpoint === "boss" ? save.x : 120;
-  player.y = GROUND - player.h;
   player.vx = 0;
-  player.vy = 0;
-  player.grounded = true;
   player.hp = 100;
   player.ammo = 3;
   player.slam = false;
@@ -232,6 +250,7 @@ function resetWorld(useCheckpoint = true) {
   player.lastDownAt = -1000;
   player.invulnerableUntil = 0;
   player.lockedUntil = 0;
+  placeOnPlatform(player, GROUND);
   state.save = save;
   state.cameraX = Math.max(0, player.x - W * 0.35);
   state.enemies = enemyPlan.map((enemy, index) => ({
@@ -254,7 +273,10 @@ function resetWorld(useCheckpoint = true) {
     hatHitUntil: 0,
     stompUntil: 0,
     phase: index * 1.3,
-  }));
+  })).map((enemy) => {
+    placeOnPlatform(enemy, enemy.y + enemy.h);
+    return enemy;
+  });
   state.attacks = [];
   state.projectiles = [];
   state.enemyProjectiles = [];
