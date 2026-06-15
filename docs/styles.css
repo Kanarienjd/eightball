@@ -475,3 +475,126 @@ dialog h2 {
   }
 
 }
+
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  #game-root canvas {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  #mobileControls {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 20 !important;
+    pointer-events: none !important;
+  }
+
+  #mobileControls .touch-button {
+    position: fixed !important;
+    pointer-events: auto !important;
+  }
+
+  #mobileControls .move-button {
+    width: 82px !important;
+    min-width: 82px !important;
+    height: 82px !important;
+    min-height: 82px !important;
+  }
+
+  #mobileControls .move-button[data-code="ArrowLeft"] {
+    left: max(8vw, env(safe-area-inset-left)) !important;
+    bottom: max(6vh, env(safe-area-inset-bottom)) !important;
+  }
+
+  #mobileControls .move-button[data-code="ArrowRight"] {
+    left: calc(max(8vw, env(safe-area-inset-left)) + 112px) !important;
+    bottom: max(6vh, env(safe-area-inset-bottom)) !important;
+  }
+
+  #mobileControls .tongue-button {
+    right: max(22vw, env(safe-area-inset-right)) !important;
+    bottom: max(8vh, env(safe-area-inset-bottom)) !important;
+    width: 82px !important;
+    min-width: 82px !important;
+    height: 82px !important;
+    min-height: 82px !important;
+  }
+
+  #mobileControls .jump-button {
+    right: max(12vw, env(safe-area-inset-right)) !important;
+    bottom: max(15vh, env(safe-area-inset-bottom)) !important;
+    width: 82px !important;
+    min-width: 82px !important;
+    height: 82px !important;
+    min-height: 82px !important;
+  }
+
+  #mobileControls .crouch-button {
+    right: max(4.8vw, env(safe-area-inset-right)) !important;
+    bottom: max(24vh, env(safe-area-inset-bottom)) !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+
+  #mobileControls .action-button[data-code="KeyK"] {
+    right: max(5.5vw, env(safe-area-inset-right)) !important;
+    bottom: max(13.5vh, env(safe-area-inset-bottom)) !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+
+  #mobileControls .slam-button {
+    right: max(7vw, env(safe-area-inset-right)) !important;
+    bottom: max(3.5vh, env(safe-area-inset-bottom)) !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+
+  #mobileControls .action-button[data-code="KeyL"] {
+    right: max(27vw, env(safe-area-inset-right)) !important;
+    bottom: max(3.4vh, env(safe-area-inset-bottom)) !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    height: 50px !important;
+    min-height: 50px !important;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 390px) {
+  #mobileControls .move-button {
+    width: 72px !important;
+    min-width: 72px !important;
+    height: 72px !important;
+    min-height: 72px !important;
+  }
+
+  #mobileControls .move-button[data-code="ArrowRight"] {
+    left: calc(max(8vw, env(safe-area-inset-left)) + 100px) !important;
+  }
+
+  #mobileControls .tongue-button,
+  #mobileControls .jump-button {
+    width: 70px !important;
+    min-width: 70px !important;
+    height: 70px !important;
+    min-height: 70px !important;
+  }
+
+  #mobileControls .crouch-button,
+  #mobileControls .action-button[data-code="KeyK"],
+  #mobileControls .slam-button,
+  #mobileControls .action-button[data-code="KeyL"] {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+}
