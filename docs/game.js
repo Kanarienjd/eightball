@@ -233,6 +233,17 @@ function supportedPlatformAt(x, width, preferredY = Infinity) {
     .sort((a, b) => a.y - b.y)[0] || candidates.sort((a, b) => a.y - b.y)[0];
 }
 
+function supportPlatform(body, tolerance = 4) {
+  const bottom = body.y + body.h;
+  return platforms.find(
+    (platform) =>
+      body.x + body.w > platform.x &&
+      body.x < platform.x + platform.w &&
+      bottom >= platform.y - tolerance &&
+      bottom <= platform.y + tolerance
+  );
+}
+
 function placeOnPlatform(body, preferredY = GROUND) {
   const platform = supportedPlatformAt(body.x, body.w, preferredY);
   body.y = (platform?.y || GROUND) - body.h;
@@ -279,16 +290,6 @@ function clearInputState() {
   });
 }
 
-function stabilizeRespawn() {
-  placeOnPlatform(player, GROUND);
-  for (const enemy of state.enemies) {
-    if (!enemy.alive) continue;
-    enemy.x = enemy.spawnX;
-    enemy.vx = 0;
-    placeOnPlatform(enemy, enemy.spawnBottom);
-  }
-}
-
 function resetWorld(useCheckpoint = true) {
   clearInputState();
   const now = performance.now();
@@ -313,7 +314,7 @@ function resetWorld(useCheckpoint = true) {
   player.invulnerableUntil = 0;
   player.lockedUntil = 0;
   placeOnPlatform(player, GROUND);
-  state.respawnUntil = now + 480;
+  state.respawnUntil = now + 120;
   state.save = save;
   state.cameraX = Math.max(0, player.x - W * 0.35);
   state.enemies = enemyPlan.map(createEnemy);
@@ -508,8 +509,7 @@ function throwHat() {
 function update(dt, now) {
   if (!state.running) return;
   if (now < state.respawnUntil) {
-    stabilizeRespawn();
-    return;
+    placeOnPlatform(player, GROUND);
   }
   updatePlayer(dt, now);
   updateEnemies(dt, now);
@@ -616,6 +616,14 @@ function moveBody(body, dt) {
       body.x = obstacle.x + obstacle.w;
     }
     body.vx = 0;
+  }
+
+  const standingPlatform = body.grounded ? supportPlatform(body, 8) : null;
+  if (body !== player && standingPlatform && body.vy >= 0) {
+    body.y = standingPlatform.y - body.h;
+    body.vy = 0;
+    body.grounded = true;
+    return;
   }
 
   const previousBottom = body.y + body.h;

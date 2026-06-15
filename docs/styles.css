@@ -243,20 +243,16 @@ dialog h2 {
   }
 
   .movement-controls {
-    position: absolute;
-    left: max(7.6vw, env(safe-area-inset-left));
-    bottom: max(5.2vh, env(safe-area-inset-bottom));
-    width: 185px;
-    height: 86px;
+    position: static;
+    width: 0;
+    height: 0;
     pointer-events: auto;
   }
 
   .action-controls {
-    position: absolute;
-    right: max(2.8vw, env(safe-area-inset-right));
-    bottom: max(2.7vh, env(safe-area-inset-bottom));
-    width: 330px;
-    height: 188px;
+    position: static;
+    width: 0;
+    height: 0;
     pointer-events: auto;
   }
 
@@ -288,7 +284,7 @@ dialog h2 {
   }
 
   .move-button {
-    position: absolute;
+    position: fixed;
     width: 78px;
     min-width: 78px;
     height: 78px;
@@ -299,18 +295,18 @@ dialog h2 {
   }
 
   .movement-controls .move-button[data-code="ArrowLeft"] {
-    left: 0;
-    bottom: 0;
+    left: max(8vw, env(safe-area-inset-left));
+    bottom: max(6vh, env(safe-area-inset-bottom));
   }
 
   .movement-controls .move-button[data-code="ArrowRight"] {
-    left: 106px;
-    bottom: 0;
+    left: calc(max(8vw, env(safe-area-inset-left)) + 105px);
+    bottom: max(6vh, env(safe-area-inset-bottom));
   }
 
   .utility-button,
   .action-button {
-    position: absolute;
+    position: fixed;
     width: 46px;
     min-width: 46px;
     height: 46px;
@@ -319,7 +315,7 @@ dialog h2 {
   }
 
   .primary-action-button {
-    position: absolute;
+    position: fixed;
     width: 74px;
     min-width: 74px;
     height: 74px;
@@ -328,8 +324,8 @@ dialog h2 {
   }
 
   .jump-button {
-    right: 82px;
-    top: 16px;
+    right: max(11.2vw, env(safe-area-inset-right));
+    bottom: max(13.5vh, env(safe-area-inset-bottom));
     width: 74px;
     min-width: 74px;
     height: 74px;
@@ -341,31 +337,31 @@ dialog h2 {
   }
 
   .crouch-button {
-    right: 0;
-    top: 0;
+    right: max(4.8vw, env(safe-area-inset-right));
+    bottom: max(21vh, env(safe-area-inset-bottom));
   }
 
   .tongue-button {
-    left: 106px;
-    bottom: 28px;
+    right: max(20.4vw, env(safe-area-inset-right));
+    bottom: max(8.1vh, env(safe-area-inset-bottom));
     border-width: 2px;
     border-color: rgba(240, 208, 108, 0.76);
     background: rgba(126, 35, 31, 0.68);
   }
 
   .action-button[data-code="KeyL"] {
-    left: 0;
-    bottom: 0;
+    right: max(25.7vw, env(safe-area-inset-right));
+    bottom: max(3.4vh, env(safe-area-inset-bottom));
   }
 
   .action-button[data-code="KeyK"] {
-    right: 8px;
-    top: 74px;
+    right: max(5.6vw, env(safe-area-inset-right));
+    bottom: max(11.6vh, env(safe-area-inset-bottom));
   }
 
   .slam-button {
-    right: 20px;
-    bottom: 0;
+    right: max(6.6vw, env(safe-area-inset-right));
+    bottom: max(3.2vh, env(safe-area-inset-bottom));
     border-color: rgba(240, 208, 108, 0.54);
   }
 
@@ -447,13 +443,6 @@ dialog h2 {
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 390px) {
-  .movement-controls {
-    left: max(7vw, env(safe-area-inset-left));
-    bottom: max(4.6vh, env(safe-area-inset-bottom));
-    width: 164px;
-    height: 72px;
-  }
-
   .move-button {
     width: 68px;
     min-width: 68px;
@@ -462,14 +451,7 @@ dialog h2 {
   }
 
   .movement-controls .move-button[data-code="ArrowRight"] {
-    left: 96px;
-  }
-
-  .action-controls {
-    width: 292px;
-    height: 164px;
-    right: max(2.2vw, env(safe-area-inset-right));
-    bottom: max(2.2vh, env(safe-area-inset-bottom));
+    left: calc(max(8vw, env(safe-area-inset-left)) + 92px);
   }
 
   .utility-button,
@@ -489,21 +471,7 @@ dialog h2 {
   }
 
   .jump-button {
-    right: 72px;
-    top: 12px;
+    right: max(11vw, env(safe-area-inset-right));
   }
 
-  .tongue-button {
-    left: 94px;
-    bottom: 24px;
-  }
-
-  .action-button[data-code="KeyK"] {
-    right: 6px;
-    top: 64px;
-  }
-
-  .slam-button {
-    right: 16px;
-  }
 }
