@@ -279,6 +279,16 @@ function clearInputState() {
   });
 }
 
+function stabilizeRespawn() {
+  placeOnPlatform(player, GROUND);
+  for (const enemy of state.enemies) {
+    if (!enemy.alive) continue;
+    enemy.x = enemy.spawnX;
+    enemy.vx = 0;
+    placeOnPlatform(enemy, enemy.spawnBottom);
+  }
+}
+
 function resetWorld(useCheckpoint = true) {
   clearInputState();
   const now = performance.now();
@@ -303,7 +313,7 @@ function resetWorld(useCheckpoint = true) {
   player.invulnerableUntil = 0;
   player.lockedUntil = 0;
   placeOnPlatform(player, GROUND);
-  state.respawnUntil = now + 220;
+  state.respawnUntil = now + 480;
   state.save = save;
   state.cameraX = Math.max(0, player.x - W * 0.35);
   state.enemies = enemyPlan.map(createEnemy);
@@ -498,7 +508,8 @@ function throwHat() {
 function update(dt, now) {
   if (!state.running) return;
   if (now < state.respawnUntil) {
-    placeOnPlatform(player, GROUND);
+    stabilizeRespawn();
+    return;
   }
   updatePlayer(dt, now);
   updateEnemies(dt, now);
@@ -1414,6 +1425,39 @@ document.getElementById("restartButton").addEventListener("click", () => {
   state.lastTime = performance.now();
 });
 
+function bindTouchActivation(id, handler) {
+  const element = document.getElementById(id);
+  element.addEventListener("pointerup", (event) => {
+    if (event.pointerType !== "touch") return;
+    event.preventDefault();
+    handler();
+  }, { passive: false });
+}
+
+bindTouchActivation("startButton", startGame);
+bindTouchActivation("fullscreenButton", toggleFullscreen);
+bindTouchActivation("gameFullscreenButton", toggleFullscreen);
+bindTouchActivation("pauseButton", pauseGame);
+bindTouchActivation("resumeButton", resumeGame);
+bindTouchActivation("pauseRestartButton", () => {
+  if (ui.pause.open) ui.pause.close();
+  resetWorld(false);
+  state.running = true;
+  state.lastTime = performance.now();
+});
+bindTouchActivation("retryButton", () => {
+  if (ui.defeat.open) ui.defeat.close();
+  resetWorld(true);
+  state.running = true;
+  state.lastTime = performance.now();
+});
+bindTouchActivation("restartButton", () => {
+  if (ui.defeat.open) ui.defeat.close();
+  resetWorld(false);
+  state.running = true;
+  state.lastTime = performance.now();
+});
+
 document.querySelectorAll(".touch-button").forEach((button) => {
   const code = button.dataset.code;
   const action = button.dataset.action;
@@ -1442,12 +1486,23 @@ document.querySelectorAll(".touch-button").forEach((button) => {
   button.addEventListener("contextmenu", (event) => event.preventDefault());
 });
 
+document.querySelectorAll("button, canvas, #game-root, .hud").forEach((element) => {
+  element.setAttribute("draggable", "false");
+  element.setAttribute("unselectable", "on");
+  element.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") event.preventDefault();
+  }, { passive: false });
+  element.addEventListener("touchstart", (event) => {
+    event.preventDefault();
+  }, { passive: false });
+});
+
 ["contextmenu", "selectstart", "dragstart"].forEach((eventName) => {
   window.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
 });
 
 document.addEventListener("touchstart", (event) => {
-  if (event.touches.length > 1) event.preventDefault();
+  event.preventDefault();
 }, { passive: false });
 
 document.addEventListener("touchmove", (event) => {
