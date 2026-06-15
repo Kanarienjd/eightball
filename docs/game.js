@@ -211,6 +211,11 @@ function writeSave(save) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(save));
 }
 
+function clearSave() {
+  state.save = { checkpoint: "start", x: 120 };
+  localStorage.removeItem(SAVE_KEY);
+}
+
 function supportedPlatformAt(x, width, preferredY = Infinity) {
   const centerX = x + width / 2;
   const candidates = platforms.filter(
@@ -232,6 +237,36 @@ function placeOnPlatform(body, preferredY = GROUND) {
   body.grounded = true;
 }
 
+function createEnemy(plan, index) {
+  const enemy = {
+    ...plan,
+    spawnX: plan.x,
+    spawnBottom: plan.y + 52,
+    homeX: plan.x,
+    x: plan.x,
+    w: 54,
+    h: 52,
+    maxHp: plan.hp,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+    alive: true,
+    nextAttack: 0,
+    pendingShotAt: 0,
+    pendingMeleeAt: 0,
+    pendingAreaAt: 0,
+    dashUntil: 0,
+    warningUntil: 0,
+    hitUntil: 0,
+    hatHitUntil: 0,
+    stompUntil: 0,
+    phase: index * 1.3,
+  };
+  placeOnPlatform(enemy, enemy.spawnBottom);
+  enemy.homeX = enemy.x;
+  return enemy;
+}
+
 function clearInputState() {
   keys.clear();
   pressed.clear();
@@ -247,7 +282,10 @@ function resetWorld(useCheckpoint = true) {
   const save = useCheckpoint
     ? state.runCheckpoint
     : { checkpoint: "start", x: 120 };
-  if (!useCheckpoint) state.runCheckpoint = save;
+  if (!useCheckpoint) {
+    state.runCheckpoint = save;
+    clearSave();
+  }
   state.save = save;
   player.h = player.standingH;
   player.x = save.checkpoint === "boss" ? save.x : 120;
@@ -265,30 +303,7 @@ function resetWorld(useCheckpoint = true) {
   state.respawnUntil = now + 220;
   state.save = save;
   state.cameraX = Math.max(0, player.x - W * 0.35);
-  state.enemies = enemyPlan.map((enemy, index) => ({
-    ...enemy,
-    homeX: enemy.x,
-    w: 54,
-    h: 52,
-    maxHp: enemy.hp,
-    vx: 0,
-    vy: 0,
-    grounded: true,
-    alive: true,
-    nextAttack: 0,
-    pendingShotAt: 0,
-    pendingMeleeAt: 0,
-    pendingAreaAt: 0,
-    dashUntil: 0,
-    warningUntil: 0,
-    hitUntil: 0,
-    hatHitUntil: 0,
-    stompUntil: 0,
-    phase: index * 1.3,
-  })).map((enemy) => {
-    placeOnPlatform(enemy, enemy.y + enemy.h);
-    return enemy;
-  });
+  state.enemies = enemyPlan.map(createEnemy);
   state.attacks = [];
   state.projectiles = [];
   state.enemyProjectiles = [];
