@@ -224,22 +224,12 @@ dialog h2 {
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
-  #game-root {
-    align-items: start;
-    padding-bottom: 106px;
-  }
-
-  #game-root canvas {
-    width: min(100vw, calc((100vh - 106px) * 16 / 9));
-    height: min(calc(100vh - 106px), calc(100vw * 9 / 16));
-  }
-
   .mobile-controls {
     position: fixed;
     z-index: 6;
-    right: max(24px, env(safe-area-inset-right));
-    bottom: max(14px, env(safe-area-inset-bottom));
-    left: max(34px, env(safe-area-inset-left));
+    right: max(22px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: max(22px, env(safe-area-inset-left));
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -248,15 +238,17 @@ dialog h2 {
 
   .movement-controls {
     display: flex;
-    gap: 14px;
+    gap: 12px;
+    padding-left: 8px;
+    padding-bottom: 2px;
     pointer-events: auto;
   }
 
   .action-controls {
     display: grid;
-    grid-template-columns: 74px 74px 54px 54px;
-    grid-template-rows: repeat(2, 54px);
-    gap: 8px 10px;
+    grid-template-columns: 48px 48px 72px 72px;
+    grid-template-rows: repeat(3, 42px);
+    gap: 7px;
     pointer-events: auto;
   }
 
@@ -265,19 +257,19 @@ dialog h2 {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 58px;
-    min-width: 58px;
-    height: 58px;
-    min-height: 58px;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.34);
     border-radius: 50%;
     color: #fff8df;
-    background: rgba(20, 20, 23, 0.7);
+    background: rgba(20, 20, 23, 0.54);
     box-shadow:
       inset 0 1px rgba(255, 255, 255, 0.12),
       0 4px 12px rgba(0, 0, 0, 0.3);
-    font-size: 23px;
+    font-size: 19px;
     font-weight: 900;
     user-select: none;
     -webkit-user-select: none;
@@ -285,73 +277,78 @@ dialog h2 {
   }
 
   .move-button {
-    width: 66px;
-    min-width: 66px;
-    height: 66px;
-    min-height: 66px;
-    font-size: 32px;
+    width: 74px;
+    min-width: 74px;
+    height: 74px;
+    min-height: 74px;
+    border-width: 2px;
+    font-size: 34px;
+    background: rgba(18, 18, 20, 0.44);
   }
 
   .utility-button,
   .action-button {
-    width: 54px;
-    min-width: 54px;
-    height: 54px;
-    min-height: 54px;
-    border-radius: 17px;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    border-radius: 50%;
   }
 
   .primary-action-button {
-    width: 66px;
-    min-width: 66px;
-    height: 66px;
-    min-height: 66px;
-    border-radius: 22px;
+    width: 72px;
+    min-width: 72px;
+    height: 72px;
+    min-height: 72px;
+    border-radius: 50%;
   }
 
   .jump-button {
-    grid-column: 1;
+    grid-column: 3;
     grid-row: 1 / span 2;
     align-self: center;
-    width: 66px;
-    min-width: 66px;
-    height: 66px;
-    min-height: 66px;
-    border-radius: 22px;
+    width: 72px;
+    min-width: 72px;
+    height: 72px;
+    min-height: 72px;
+    border-width: 2px;
+    border-radius: 50%;
     border-color: rgba(244, 236, 213, 0.62);
+    background: rgba(18, 18, 20, 0.6);
   }
 
   .crouch-button {
-    grid-column: 4;
-    grid-row: 2;
+    grid-column: 2;
+    grid-row: 3;
   }
 
   .tongue-button {
-    grid-column: 2;
+    grid-column: 4;
     grid-row: 1 / span 2;
     align-self: center;
+    border-width: 2px;
     border-color: rgba(240, 208, 108, 0.76);
-    background: rgba(126, 35, 31, 0.86);
+    background: rgba(126, 35, 31, 0.74);
   }
 
   .action-button[data-code="KeyL"] {
-    grid-column: 3;
-    grid-row: 1;
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .action-button[data-code="KeyK"] {
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 2;
   }
 
   .slam-button {
-    grid-column: 4;
-    grid-row: 1;
+    grid-column: 1;
+    grid-row: 3;
     border-color: rgba(240, 208, 108, 0.54);
   }
 
   .control-icon {
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1;
   }
 
@@ -428,41 +425,32 @@ dialog h2 {
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 390px) {
-  #game-root {
-    padding-bottom: 88px;
-  }
-
-  #game-root canvas {
-    width: min(100vw, calc((100vh - 88px) * 16 / 9));
-    height: min(calc(100vh - 88px), calc(100vw * 9 / 16));
-  }
-
   .move-button {
-    width: 56px;
-    min-width: 56px;
-    height: 56px;
-    min-height: 56px;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    min-height: 64px;
   }
 
   .action-controls {
-    grid-template-columns: 64px 64px 48px 48px;
-    grid-template-rows: repeat(2, 48px);
-    gap: 7px;
+    grid-template-columns: 42px 42px 62px 62px;
+    grid-template-rows: repeat(3, 36px);
+    gap: 6px;
   }
 
   .utility-button,
   .action-button {
-    width: 48px;
-    min-width: 48px;
-    height: 48px;
-    min-height: 48px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
   }
 
   .jump-button,
   .primary-action-button {
-    width: 56px;
-    min-width: 56px;
-    height: 56px;
-    min-height: 56px;
+    width: 62px;
+    min-width: 62px;
+    height: 62px;
+    min-height: 62px;
   }
 }
