@@ -26,6 +26,7 @@ const ui = {
 
 const keys = new Set();
 const pressed = new Set();
+const activeTouchCodes = new Set();
 const platforms = [
   { x: 0, y: GROUND, w: 1740, h: 70 },
   { x: 2570, y: GROUND, w: WORLD_W - 2570, h: 70 },
@@ -84,6 +85,7 @@ const state = {
   hat: null,
   doorOpen: false,
   doorOpenAt: 0,
+  respawnUntil: 0,
   runCheckpoint: { checkpoint: "start", x: 120 },
   save: readSave(),
 };
@@ -230,9 +232,18 @@ function placeOnPlatform(body, preferredY = GROUND) {
   body.grounded = true;
 }
 
-function resetWorld(useCheckpoint = true) {
+function clearInputState() {
   keys.clear();
   pressed.clear();
+  activeTouchCodes.clear();
+  document.querySelectorAll(".touch-button.is-pressed").forEach((button) => {
+    button.classList.remove("is-pressed");
+  });
+}
+
+function resetWorld(useCheckpoint = true) {
+  clearInputState();
+  const now = performance.now();
   const save = useCheckpoint
     ? state.runCheckpoint
     : { checkpoint: "start", x: 120 };
@@ -251,6 +262,7 @@ function resetWorld(useCheckpoint = true) {
   player.invulnerableUntil = 0;
   player.lockedUntil = 0;
   placeOnPlatform(player, GROUND);
+  state.respawnUntil = now + 220;
   state.save = save;
   state.cameraX = Math.max(0, player.x - W * 0.35);
   state.enemies = enemyPlan.map((enemy, index) => ({
@@ -286,7 +298,7 @@ function resetWorld(useCheckpoint = true) {
   state.hat = null;
   state.doorOpen = false;
   state.doorOpenAt = 0;
-  state.lastTime = performance.now();
+  state.lastTime = now;
   updateHud();
 }
 
@@ -428,6 +440,11 @@ function startSlam() {
   player.vy = 790;
 }
 
+function mobileSlamAttack() {
+  if (!state.running || player.grounded || player.slam) return;
+  startSlam();
+}
+
 function finishSlam() {
   const now = performance.now();
   player.slam = false;
@@ -462,6 +479,9 @@ function throwHat() {
 
 function update(dt, now) {
   if (!state.running) return;
+  if (now < state.respawnUntil) {
+    placeOnPlatform(player, GROUND);
+  }
   updatePlayer(dt, now);
   updateEnemies(dt, now);
   updateAttacks(dt);
@@ -489,7 +509,8 @@ function updatePlayer(dt, now) {
     }
 
     const jumpPressed = pressed.has("KeyW") || pressed.has("ArrowUp");
-    if (jumpPressed && player.jumpsUsed < 2) {
+    const blockedByLowCeiling = player.crouching && !canStandHere(player.x, player.y);
+    if (jumpPressed && player.jumpsUsed < 2 && !blockedByLowCeiling) {
       setCrouching(false);
       playSound(player.jumpsUsed === 0 ? "jump" : "doubleJump");
       player.vy = player.jumpsUsed === 0 ? -570 : -520;
@@ -508,20 +529,25 @@ function updatePlayer(dt, now) {
   if (player.y > H + 100) damagePlayer(100, now);
 }
 
+function canStandHere(x, y) {
+  const standingY = y + player.h - player.standingH;
+  const standingBounds = {
+    x,
+    y: standingY,
+    w: player.w,
+    h: player.standingH,
+  };
+  return !lowCeilings.some((ceiling) => rectsOverlap(standingBounds, ceiling));
+}
+
 function setCrouching(shouldCrouch) {
   if (shouldCrouch === player.crouching) return;
   if (shouldCrouch) {
     player.y += player.standingH - player.crouchingH;
     player.h = player.crouchingH;
   } else {
+    if (!canStandHere(player.x, player.y)) return;
     const standingY = player.y - (player.standingH - player.crouchingH);
-    const standingBounds = {
-      x: player.x,
-      y: standingY,
-      w: player.w,
-      h: player.standingH,
-    };
-    if (lowCeilings.some((ceiling) => rectsOverlap(standingBounds, ceiling))) return;
     player.y = standingY;
     player.h = player.standingH;
   }
@@ -1334,7 +1360,7 @@ async function toggleFullscreen() {
 function pauseGame() {
   if (!state.running || ui.defeat.open) return;
   state.running = false;
-  keys.clear();
+  clearInputState();
   ui.pause.showModal();
 }
 
@@ -1360,17 +1386,23 @@ document.getElementById("retryButton").addEventListener("click", () => {
   ui.defeat.close();
   resetWorld(true);
   state.running = true;
+  state.lastTime = performance.now();
 });
 document.getElementById("restartButton").addEventListener("click", () => {
   ui.defeat.close();
   resetWorld(false);
   state.running = true;
+  state.lastTime = performance.now();
 });
 
-document.querySelectorAll(".touch-button[data-code]").forEach((button) => {
+document.querySelectorAll(".touch-button").forEach((button) => {
   const code = button.dataset.code;
+  const action = button.dataset.action;
   const release = () => {
-    releaseInput(code);
+    if (code) {
+      activeTouchCodes.delete(code);
+      releaseInput(code);
+    }
     button.classList.remove("is-pressed");
   };
 
@@ -1378,7 +1410,11 @@ document.querySelectorAll(".touch-button[data-code]").forEach((button) => {
     event.preventDefault();
     ensureAudio();
     button.setPointerCapture?.(event.pointerId);
-    pressInput(code);
+    if (action === "slam") mobileSlamAttack();
+    if (code) {
+      activeTouchCodes.add(code);
+      pressInput(code);
+    }
     button.classList.add("is-pressed");
   });
   button.addEventListener("pointerup", release);
@@ -1387,7 +1423,7 @@ document.querySelectorAll(".touch-button[data-code]").forEach((button) => {
   button.addEventListener("contextmenu", (event) => event.preventDefault());
 });
 
-window.addEventListener("blur", () => keys.clear());
+window.addEventListener("blur", clearInputState);
 window.addEventListener("keydown", keyDown);
 window.addEventListener("keyup", keyUp);
 

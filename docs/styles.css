@@ -227,9 +227,9 @@ dialog h2 {
   .mobile-controls {
     position: fixed;
     z-index: 6;
-    right: max(14px, env(safe-area-inset-right));
-    bottom: max(12px, env(safe-area-inset-bottom));
-    left: max(14px, env(safe-area-inset-left));
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    left: max(22px, env(safe-area-inset-left));
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -238,8 +238,8 @@ dialog h2 {
 
   .movement-controls {
     display: flex;
-    gap: 10px;
-    padding: 7px;
+    gap: 12px;
+    padding: 8px;
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 40px;
     background: rgba(8, 8, 10, 0.34);
@@ -250,9 +250,9 @@ dialog h2 {
 
   .action-controls {
     display: grid;
-    grid-template-columns: repeat(3, 64px);
-    grid-template-rows: repeat(2, 58px);
-    gap: 8px;
+    grid-template-columns: 74px 74px 54px 54px;
+    grid-template-rows: repeat(2, 54px);
+    gap: 9px;
     pointer-events: auto;
   }
 
@@ -281,29 +281,44 @@ dialog h2 {
   }
 
   .move-button {
-    width: 62px;
-    min-width: 62px;
-    height: 62px;
-    min-height: 62px;
-    font-size: 30px;
+    width: 76px;
+    min-width: 76px;
+    height: 76px;
+    min-height: 76px;
+    font-size: 36px;
   }
 
   .utility-button,
   .action-button {
-    width: 64px;
-    min-width: 64px;
-    height: 58px;
-    min-height: 58px;
-    border-radius: 18px;
+    width: 54px;
+    min-width: 54px;
+    height: 54px;
+    min-height: 54px;
+    border-radius: 17px;
+  }
+
+  .primary-action-button {
+    width: 74px;
+    min-width: 74px;
+    height: 74px;
+    min-height: 74px;
+    border-radius: 22px;
   }
 
   .jump-button {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    width: 74px;
+    min-width: 74px;
+    height: 74px;
+    min-height: 74px;
+    border-radius: 22px;
+    border-color: rgba(244, 236, 213, 0.62);
   }
 
   .crouch-button {
-    grid-column: 1;
+    grid-column: 4;
     grid-row: 2;
   }
 
@@ -311,7 +326,6 @@ dialog h2 {
     grid-column: 2;
     grid-row: 1 / span 2;
     align-self: center;
-    height: 76px;
     border-color: rgba(240, 208, 108, 0.76);
     background: rgba(126, 35, 31, 0.86);
   }
@@ -324,6 +338,12 @@ dialog h2 {
   .action-button[data-code="KeyK"] {
     grid-column: 3;
     grid-row: 2;
+  }
+
+  .slam-button {
+    grid-column: 4;
+    grid-row: 1;
+    border-color: rgba(240, 208, 108, 0.54);
   }
 
   .control-icon {
@@ -405,27 +425,31 @@ dialog h2 {
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 390px) {
   .move-button {
-    width: 54px;
-    min-width: 54px;
-    height: 54px;
-    min-height: 54px;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    min-height: 64px;
   }
 
   .action-controls {
-    grid-template-columns: repeat(3, 58px);
-    grid-template-rows: repeat(2, 50px);
-    gap: 6px;
+    grid-template-columns: 64px 64px 48px 48px;
+    grid-template-rows: repeat(2, 48px);
+    gap: 7px;
   }
 
   .utility-button,
   .action-button {
-    width: 58px;
-    min-width: 58px;
-    height: 50px;
-    min-height: 50px;
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
   }
 
-  .tongue-button {
-    height: 68px;
+  .jump-button,
+  .primary-action-button {
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    min-height: 64px;
   }
 }
