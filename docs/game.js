@@ -283,21 +283,18 @@ function updateHud() {
     state.save.checkpoint === "boss" ? "Чекпоинт перед боссом" : "Тренировочный зал";
 }
 
-function keyDown(event) {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.code)) {
-    event.preventDefault();
-  }
-  if (!keys.has(event.code)) pressed.add(event.code);
-  keys.add(event.code);
+function pressInput(code, repeat = false) {
+  if (!keys.has(code)) pressed.add(code);
+  keys.add(code);
 
-  if (event.code === "Escape" && !event.repeat) {
+  if (code === "Escape" && !repeat) {
     if (ui.pause.open) resumeGame();
     else if (state.running && !ui.defeat.open) pauseGame();
     return;
   }
 
-  if ((event.code === "KeyS" || event.code === "ArrowDown") && state.running) {
-    if (event.repeat) return;
+  if ((code === "KeyS" || code === "ArrowDown") && state.running) {
+    if (repeat) return;
     const now = performance.now();
     if (now - player.lastDownAt <= 280 && player.grounded && player.y + player.h < GROUND - 2) {
       player.dropThroughUntil = now + 260;
@@ -307,17 +304,28 @@ function keyDown(event) {
     }
     player.lastDownAt = now;
   }
-  if (event.repeat) return;
-  if (event.code === "KeyJ" && state.running) {
+  if (repeat) return;
+  if (code === "KeyJ" && state.running) {
     if (!player.grounded && downHeld()) startSlam();
     else tongueAttack();
   }
-  if (event.code === "KeyL" && state.running) spitAttack();
-  if (event.code === "KeyK" && state.running) throwHat();
+  if (code === "KeyL" && state.running) spitAttack();
+  if (code === "KeyK" && state.running) throwHat();
+}
+
+function releaseInput(code) {
+  keys.delete(code);
+}
+
+function keyDown(event) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.code)) {
+    event.preventDefault();
+  }
+  pressInput(event.code, event.repeat);
 }
 
 function keyUp(event) {
-  keys.delete(event.code);
+  releaseInput(event.code);
 }
 
 function downHeld() {
@@ -1336,6 +1344,28 @@ document.getElementById("restartButton").addEventListener("click", () => {
   resetWorld(false);
   state.running = true;
 });
+
+document.querySelectorAll(".touch-button[data-code]").forEach((button) => {
+  const code = button.dataset.code;
+  const release = () => {
+    releaseInput(code);
+    button.classList.remove("is-pressed");
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    ensureAudio();
+    button.setPointerCapture?.(event.pointerId);
+    pressInput(code);
+    button.classList.add("is-pressed");
+  });
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("lostpointercapture", release);
+  button.addEventListener("contextmenu", (event) => event.preventDefault());
+});
+
+window.addEventListener("blur", () => keys.clear());
 window.addEventListener("keydown", keyDown);
 window.addEventListener("keyup", keyUp);
 

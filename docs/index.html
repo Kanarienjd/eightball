@@ -36,6 +36,26 @@
       <button class="icon-button" id="gameFullscreenButton" title="Полноэкранный режим" aria-label="Полноэкранный режим">⛶</button>
     </div>
 
+    <div class="mobile-controls" id="mobileControls" aria-label="Сенсорное управление">
+      <div class="movement-controls">
+        <button class="touch-button touch-jump" data-code="ArrowUp" aria-label="Прыжок">↑</button>
+        <button class="touch-button" data-code="ArrowLeft" aria-label="Движение влево">←</button>
+        <button class="touch-button" data-code="ArrowDown" aria-label="Присесть или спрыгнуть">↓</button>
+        <button class="touch-button" data-code="ArrowRight" aria-label="Движение вправо">→</button>
+      </div>
+      <div class="action-controls">
+        <button class="touch-button action-button" data-code="KeyJ">Удар</button>
+        <button class="touch-button action-button" data-code="KeyL">Плевок</button>
+        <button class="touch-button action-button" data-code="KeyK">Шляпа</button>
+      </div>
+    </div>
+
+    <aside class="rotate-screen" aria-live="polite">
+      <div class="phone-shape" aria-hidden="true"></div>
+      <strong>Поверните телефон</strong>
+      <span>Игра работает в горизонтальном режиме</span>
+    </aside>
+
     <dialog id="pauseDialog">
       <h2>Пауза</h2>
       <div class="dialog-actions">
