@@ -192,7 +192,12 @@ h1 {
 }
 
 .mobile-controls,
-.rotate-screen {
+.rotate-screen,
+.control-editor {
+  display: none;
+}
+
+.control-editor[hidden] {
   display: none;
 }
 
@@ -401,6 +406,35 @@ dialog h2 {
     min-height: 40px;
     height: 40px;
   }
+
+  .control-editor {
+    position: fixed;
+    z-index: 30;
+    top: max(78px, calc(env(safe-area-inset-top) + 58px));
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 2px solid rgba(240, 208, 108, 0.8);
+    border-radius: 9px;
+    color: #f4ecd5;
+    background: rgba(9, 9, 11, 0.9);
+    text-shadow: 0 2px #000;
+    transform: translateX(-50%);
+    pointer-events: auto;
+  }
+
+  .control-editor span {
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .control-editor button {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
@@ -493,7 +527,24 @@ dialog h2 {
 
   #mobileControls .touch-button {
     position: fixed !important;
+    left: calc(var(--control-x, 50) * 1vw) !important;
+    top: calc(var(--control-y, 50) * 1vh) !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: calc(var(--control-size, 54) * 1px) !important;
+    min-width: calc(var(--control-size, 54) * 1px) !important;
+    height: calc(var(--control-size, 54) * 1px) !important;
+    min-height: calc(var(--control-size, 54) * 1px) !important;
+    transform: translate(-50%, -50%) !important;
     pointer-events: auto !important;
+  }
+
+  body.is-control-editing #mobileControls .touch-button {
+    border-color: #f0d06c !important;
+    background: rgba(32, 26, 9, 0.72) !important;
+    box-shadow:
+      0 0 0 4px rgba(240, 208, 108, 0.18),
+      0 5px 18px rgba(0, 0, 0, 0.42) !important;
   }
 
   #mobileControls .move-button {
@@ -565,6 +616,20 @@ dialog h2 {
     min-width: 50px !important;
     height: 50px !important;
     min-height: 50px !important;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  #mobileControls .touch-button {
+    left: calc(var(--control-x, 50) * 1vw) !important;
+    top: calc(var(--control-y, 50) * 1vh) !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: calc(var(--control-size, 54) * 1px) !important;
+    min-width: calc(var(--control-size, 54) * 1px) !important;
+    height: calc(var(--control-size, 54) * 1px) !important;
+    min-height: calc(var(--control-size, 54) * 1px) !important;
+    transform: translate(-50%, -50%) !important;
   }
 }
 

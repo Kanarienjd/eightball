@@ -33,6 +33,7 @@
         <span id="ammoText">Плевки: 3</span>
       </div>
       <button class="icon-button" id="pauseButton" title="Пауза" aria-label="Пауза">Ⅱ</button>
+      <button class="icon-button" id="controlsSettingsButton" title="Настроить управление" aria-label="Настроить управление">⚙</button>
       <button class="icon-button" id="gameFullscreenButton" title="Полноэкранный режим" aria-label="Полноэкранный режим">⛶</button>
     </div>
 
@@ -61,6 +62,12 @@
           <span class="control-icon">↓J</span><span class="control-label">Вниз</span>
         </button>
       </div>
+    </div>
+
+    <div class="control-editor" id="controlEditor" hidden>
+      <span>Перетащи кнопки как удобно</span>
+      <button class="primary" id="controlsDoneButton">Готово</button>
+      <button id="controlsResetButton">Сброс</button>
     </div>
 
     <aside class="rotate-screen" aria-live="polite">

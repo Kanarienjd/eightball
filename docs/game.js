@@ -8,6 +8,7 @@ const WORLD_W = 5000;
 const GROUND = 470;
 const CEILING = 22;
 const SAVE_KEY = "eight-ball-prototype-v2";
+const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v1";
 const PLAYER_SHOT_SPEED = 780;
 const PLAYER_SHOT_RANGE = 900;
 const ENEMY_SHOT_SPEED = 340;
@@ -30,6 +31,19 @@ const mobileLandscapeQuery = window.matchMedia?.("(hover: none) and (pointer: co
 const keys = new Set();
 const pressed = new Set();
 const activeTouchCodes = new Set();
+let controlsEditing = false;
+let wasRunningBeforeControlEdit = false;
+let draggedControl = null;
+const defaultControlLayout = {
+  left: { x: 12, y: 84, size: 82 },
+  right: { x: 24, y: 84, size: 82 },
+  attack: { x: 75, y: 79, size: 82 },
+  jump: { x: 84, y: 68, size: 82 },
+  crouch: { x: 92, y: 60, size: 50 },
+  hat: { x: 91, y: 73, size: 50 },
+  slam: { x: 90, y: 86, size: 50 },
+  spit: { x: 70, y: 86, size: 50 },
+};
 const platforms = [
   { x: 0, y: GROUND, w: 1740, h: 70 },
   { x: 2570, y: GROUND, w: WORLD_W - 2570, h: 70 },
@@ -217,6 +231,95 @@ function writeSave(save) {
 function clearSave() {
   state.save = { checkpoint: "start", x: 120 };
   localStorage.removeItem(SAVE_KEY);
+}
+
+function controlId(button) {
+  if (button.dataset.action === "slam") return "slam";
+  if (button.dataset.code === "ArrowLeft") return "left";
+  if (button.dataset.code === "ArrowRight") return "right";
+  if (button.dataset.code === "ArrowUp") return "jump";
+  if (button.dataset.code === "ArrowDown") return "crouch";
+  if (button.dataset.code === "KeyJ") return "attack";
+  if (button.dataset.code === "KeyL") return "spit";
+  if (button.dataset.code === "KeyK") return "hat";
+  return "";
+}
+
+function readControlLayout() {
+  try {
+    return {
+      ...defaultControlLayout,
+      ...JSON.parse(localStorage.getItem(CONTROL_LAYOUT_KEY) || "{}"),
+    };
+  } catch {
+    return { ...defaultControlLayout };
+  }
+}
+
+function writeControlLayout(layout) {
+  localStorage.setItem(CONTROL_LAYOUT_KEY, JSON.stringify(layout));
+}
+
+function applyControlLayout(layout = readControlLayout()) {
+  document.querySelectorAll(".touch-button").forEach((button) => {
+    const id = controlId(button);
+    const position = layout[id];
+    if (!position) return;
+    button.style.setProperty("--control-x", String(position.x));
+    button.style.setProperty("--control-y", String(position.y));
+    button.style.setProperty("--control-size", String(position.size));
+  });
+}
+
+function controlLayoutFromDom() {
+  const layout = {};
+  document.querySelectorAll(".touch-button").forEach((button) => {
+    const id = controlId(button);
+    if (!id) return;
+    layout[id] = {
+      x: Number(button.style.getPropertyValue("--control-x")) || defaultControlLayout[id].x,
+      y: Number(button.style.getPropertyValue("--control-y")) || defaultControlLayout[id].y,
+      size: defaultControlLayout[id].size,
+    };
+  });
+  return layout;
+}
+
+function setControlPosition(button, clientX, clientY) {
+  const size = Number(button.style.getPropertyValue("--control-size")) || 54;
+  const minX = (size / 2 / window.innerWidth) * 100;
+  const maxX = 100 - minX;
+  const minY = (size / 2 / window.innerHeight) * 100;
+  const maxY = 100 - minY;
+  const x = clamp((clientX / window.innerWidth) * 100, minX, maxX);
+  const y = clamp((clientY / window.innerHeight) * 100, minY, maxY);
+  button.style.setProperty("--control-x", x.toFixed(2));
+  button.style.setProperty("--control-y", y.toFixed(2));
+}
+
+function startControlEdit() {
+  wasRunningBeforeControlEdit = state.running;
+  state.running = false;
+  clearInputState();
+  controlsEditing = true;
+  document.body.classList.add("is-control-editing");
+  document.getElementById("controlEditor").hidden = false;
+  applyControlLayout();
+}
+
+function finishControlEdit() {
+  controlsEditing = false;
+  draggedControl = null;
+  document.body.classList.remove("is-control-editing");
+  document.getElementById("controlEditor").hidden = true;
+  writeControlLayout(controlLayoutFromDom());
+  state.running = wasRunningBeforeControlEdit;
+  state.lastTime = performance.now();
+}
+
+function resetControlLayout() {
+  localStorage.removeItem(CONTROL_LAYOUT_KEY);
+  applyControlLayout(defaultControlLayout);
 }
 
 function supportedPlatformAt(x, width, preferredY = Infinity) {
@@ -1413,6 +1516,9 @@ document.getElementById("startButton").addEventListener("click", startGame);
 document.getElementById("fullscreenButton").addEventListener("click", toggleFullscreen);
 document.getElementById("gameFullscreenButton").addEventListener("click", toggleFullscreen);
 document.getElementById("pauseButton").addEventListener("click", pauseGame);
+document.getElementById("controlsSettingsButton").addEventListener("click", startControlEdit);
+document.getElementById("controlsDoneButton").addEventListener("click", finishControlEdit);
+document.getElementById("controlsResetButton").addEventListener("click", resetControlLayout);
 document.getElementById("resumeButton").addEventListener("click", resumeGame);
 document.getElementById("pauseRestartButton").addEventListener("click", () => {
   ui.pause.close();
@@ -1446,6 +1552,9 @@ bindTouchActivation("startButton", startGame);
 bindTouchActivation("fullscreenButton", toggleFullscreen);
 bindTouchActivation("gameFullscreenButton", toggleFullscreen);
 bindTouchActivation("pauseButton", pauseGame);
+bindTouchActivation("controlsSettingsButton", startControlEdit);
+bindTouchActivation("controlsDoneButton", finishControlEdit);
+bindTouchActivation("controlsResetButton", resetControlLayout);
 bindTouchActivation("resumeButton", resumeGame);
 bindTouchActivation("pauseRestartButton", () => {
   if (ui.pause.open) ui.pause.close();
@@ -1479,6 +1588,13 @@ document.querySelectorAll(".touch-button").forEach((button) => {
 
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
+    if (controlsEditing) {
+      draggedControl = button;
+      button.setPointerCapture?.(event.pointerId);
+      setControlPosition(button, event.clientX, event.clientY);
+      button.classList.add("is-pressed");
+      return;
+    }
     ensureAudio();
     button.setPointerCapture?.(event.pointerId);
     if (action === "slam") mobileSlamAttack();
@@ -1492,6 +1608,18 @@ document.querySelectorAll(".touch-button").forEach((button) => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
   button.addEventListener("contextmenu", (event) => event.preventDefault());
+});
+
+window.addEventListener("pointermove", (event) => {
+  if (!controlsEditing || !draggedControl) return;
+  event.preventDefault();
+  setControlPosition(draggedControl, event.clientX, event.clientY);
+}, { passive: false });
+
+window.addEventListener("pointerup", () => {
+  if (!draggedControl) return;
+  draggedControl.classList.remove("is-pressed");
+  draggedControl = null;
 });
 
 document.querySelectorAll("button, canvas, #game-root, .hud").forEach((element) => {
@@ -1521,5 +1649,6 @@ window.addEventListener("blur", clearInputState);
 window.addEventListener("keydown", keyDown);
 window.addEventListener("keyup", keyUp);
 
+applyControlLayout();
 resetWorld(false);
 requestAnimationFrame(frame);
