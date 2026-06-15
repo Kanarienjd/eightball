@@ -14,6 +14,27 @@ const PLAYER_SHOT_RANGE = 900;
 const ENEMY_SHOT_SPEED = 340;
 const ENEMY_SHOT_RANGE = 1500;
 const MOBILE_WORLD_Y = -92;
+const DASH_ENEMY_RULES = {
+  detectionRange: 900,
+  triggerRange: 330,
+  walkSpeed: 230,
+  windup: 360,
+  dashDuration: 900,
+  cooldown: 1550,
+  meleeRange: 58,
+  meleeCooldown: 760,
+  meleeDamage: 12,
+};
+const SHOOTER_BURST_RULES = {
+  triggerRange: 560,
+  windup: 300,
+  shots: 5,
+  shotGap: 170,
+  cooldown: 1850,
+};
+const BOSS_TRIGGER_X = 4920;
+const BOSS_NOTE_TRAVEL = 1400;
+const BOSS_HIT_WINDOW = 170;
 
 const ui = {
   start: document.getElementById("startScreen"),
@@ -103,6 +124,8 @@ const state = {
   doorOpen: false,
   doorOpenAt: 0,
   respawnUntil: 0,
+  mode: "level",
+  boss: null,
   runCheckpoint: { checkpoint: "start", x: 120 },
   save: readSave(),
 };
@@ -301,6 +324,7 @@ function startControlEdit() {
   wasRunningBeforeControlEdit = state.running;
   state.running = false;
   clearInputState();
+  state.lastTime = performance.now();
   controlsEditing = true;
   document.body.classList.add("is-control-editing");
   document.getElementById("controlEditor").hidden = false;
@@ -313,8 +337,11 @@ function finishControlEdit() {
   document.body.classList.remove("is-control-editing");
   document.getElementById("controlEditor").hidden = true;
   writeControlLayout(controlLayoutFromDom());
+  clearInputState();
+  stabilizeActors();
   state.running = wasRunningBeforeControlEdit;
   state.lastTime = performance.now();
+  state.respawnUntil = performance.now() + 120;
 }
 
 function resetControlLayout() {
@@ -354,6 +381,14 @@ function placeOnPlatform(body, preferredY = GROUND) {
   body.grounded = true;
 }
 
+function stabilizeActors() {
+  placeOnPlatform(player, GROUND);
+  for (const enemy of state.enemies) {
+    if (!enemy.alive) continue;
+    placeOnPlatform(enemy, enemy.spawnBottom);
+  }
+}
+
 function createEnemy(plan, index) {
   const enemy = {
     ...plan,
@@ -372,6 +407,8 @@ function createEnemy(plan, index) {
     pendingShotAt: 0,
     pendingMeleeAt: 0,
     pendingAreaAt: 0,
+    burstShotsLeft: 0,
+    burstNextShotAt: 0,
     dashUntil: 0,
     warningUntil: 0,
     hitUntil: 0,
@@ -409,6 +446,7 @@ function resetWorld(useCheckpoint = true) {
   player.vx = 0;
   player.hp = 100;
   player.ammo = 3;
+  player.facing = 1;
   player.slam = false;
   player.crouching = false;
   player.jumpsUsed = 0;
@@ -430,8 +468,13 @@ function resetWorld(useCheckpoint = true) {
   state.hat = null;
   state.doorOpen = false;
   state.doorOpenAt = 0;
+  state.mode = "level";
+  state.boss = null;
   state.lastTime = now;
   updateHud();
+  if (useCheckpoint && save.checkpoint === "boss") {
+    startBossBattle(now);
+  }
 }
 
 function startGame() {
@@ -471,6 +514,10 @@ function pressInput(code, repeat = false) {
     player.lastDownAt = now;
   }
   if (repeat) return;
+  if (state.mode === "boss" && state.running) {
+    if (code === "KeyJ") bossHit();
+    return;
+  }
   if (code === "KeyJ" && state.running) {
     if (!player.grounded && downHeld()) startSlam();
     else tongueAttack();
@@ -611,8 +658,13 @@ function throwHat() {
 
 function update(dt, now) {
   if (!state.running) return;
+  if (state.mode === "boss") {
+    updateBoss(dt, now);
+    updateParticles(dt);
+    return;
+  }
   if (now < state.respawnUntil) {
-    placeOnPlatform(player, GROUND);
+    stabilizeActors();
   }
   updatePlayer(dt, now);
   updateEnemies(dt, now);
@@ -623,6 +675,9 @@ function update(dt, now) {
   updateEnemyAreas(dt, now);
   updateParticles(dt);
   updateCheckpoint(now);
+  if (state.runCheckpoint.checkpoint === "boss" && player.x >= BOSS_TRIGGER_X) {
+    startBossBattle(now);
+  }
   state.cameraX += (clamp(player.x - W * 0.36, 0, WORLD_W - W) - state.cameraX) * Math.min(1, dt * 7);
 }
 
@@ -752,6 +807,34 @@ function moveBody(body, dt) {
   }
 }
 
+function fireEnemyShot(enemy, now) {
+  const originX = enemy.x + enemy.w / 2;
+  const originY = enemy.y + enemy.h / 2;
+  const targetX = player.x + player.w / 2;
+  const targetY = enemy.behavior === "crouchShooter"
+    ? 350
+    : player.y + player.h / 2;
+  const shotDistance = Math.hypot(targetX - originX, targetY - originY) || 1;
+  state.enemyProjectiles.push({
+    x: originX,
+    y: originY,
+    vx: ((targetX - originX) / shotDistance) * ENEMY_SHOT_SPEED,
+    vy: ((targetY - originY) / shotDistance) * ENEMY_SHOT_SPEED,
+    r: 7,
+    distance: 0,
+    maxDistance: ENEMY_SHOT_RANGE,
+  });
+  enemy.warningUntil = now + 90;
+  playSound("enemyShot");
+}
+
+function updateEnemyBurst(enemy, now) {
+  if (enemy.burstShotsLeft <= 0 || now < enemy.burstNextShotAt) return;
+  fireEnemyShot(enemy, now);
+  enemy.burstShotsLeft -= 1;
+  enemy.burstNextShotAt = now + SHOOTER_BURST_RULES.shotGap;
+}
+
 function updateEnemies(dt, now) {
   for (const enemy of state.enemies) {
     if (!enemy.alive) continue;
@@ -760,7 +843,7 @@ function updateEnemies(dt, now) {
       player.y + player.h / 2 - (enemy.y + enemy.h / 2)
     );
     const sameLane = verticalDistance < 48;
-    const detectionRange = enemy.behavior === "dash" ? 900 : 580;
+    const detectionRange = enemy.behavior === "dash" ? DASH_ENEMY_RULES.detectionRange : 580;
     const withinSection =
       enemy.behavior === "dash" ||
       ((!enemy.activationX || player.x >= enemy.activationX) &&
@@ -772,24 +855,9 @@ function updateEnemies(dt, now) {
 
     if (enemy.pendingShotAt && now >= enemy.pendingShotAt) {
       enemy.pendingShotAt = 0;
-      const originX = enemy.x + enemy.w / 2;
-      const originY = enemy.y + enemy.h / 2;
-      const targetX = player.x + player.w / 2;
-      const targetY = enemy.behavior === "crouchShooter"
-        ? 350
-        : player.y + player.h / 2;
-      const shotDistance = Math.hypot(targetX - originX, targetY - originY) || 1;
-      state.enemyProjectiles.push({
-        x: originX,
-        y: originY,
-        vx: ((targetX - originX) / shotDistance) * ENEMY_SHOT_SPEED,
-        vy: ((targetY - originY) / shotDistance) * ENEMY_SHOT_SPEED,
-        r: 7,
-        distance: 0,
-        maxDistance: ENEMY_SHOT_RANGE,
-      });
-      playSound("enemyShot");
+      fireEnemyShot(enemy, now);
     }
+    updateEnemyBurst(enemy, now);
     if (enemy.pendingMeleeAt && now >= enemy.pendingMeleeAt) {
       enemy.pendingMeleeAt = 0;
       const currentDistance = Math.abs(player.x - enemy.x);
@@ -814,10 +882,18 @@ function updateEnemies(dt, now) {
 
     if (active && enemy.ranged) {
       enemy.vx = approach(enemy.vx, 0, 900 * dt);
-      if (Math.abs(distance) < 520 && now >= enemy.nextAttack && !enemy.pendingShotAt) {
-        enemy.warningUntil = now + 420;
-        enemy.pendingShotAt = now + 420;
-        enemy.nextAttack = now + 1650;
+      if (
+        Math.abs(distance) < SHOOTER_BURST_RULES.triggerRange &&
+        now >= enemy.nextAttack &&
+        enemy.burstShotsLeft <= 0
+      ) {
+        enemy.warningUntil = now + SHOOTER_BURST_RULES.windup;
+        enemy.burstShotsLeft = SHOOTER_BURST_RULES.shots;
+        enemy.burstNextShotAt = now + SHOOTER_BURST_RULES.windup;
+        enemy.nextAttack =
+          enemy.burstNextShotAt +
+          SHOOTER_BURST_RULES.shotGap * SHOOTER_BURST_RULES.shots +
+          SHOOTER_BURST_RULES.cooldown;
       }
     } else if (active && enemy.behavior === "heavy") {
       if (sameLane && Math.abs(distance) > 125) {
@@ -831,22 +907,27 @@ function updateEnemies(dt, now) {
         }
       }
     } else if (active) {
-      if (enemy.behavior === "dash" && sameLane && Math.abs(distance) < 330 && now >= enemy.nextAttack) {
-        enemy.warningUntil = now + 360;
-        enemy.dashUntil = now + 900;
-        enemy.nextAttack = now + 1550;
+      if (
+        enemy.behavior === "dash" &&
+        sameLane &&
+        Math.abs(distance) < DASH_ENEMY_RULES.triggerRange &&
+        now >= enemy.nextAttack
+      ) {
+        enemy.warningUntil = now + DASH_ENEMY_RULES.windup;
+        enemy.dashUntil = enemy.warningUntil + DASH_ENEMY_RULES.dashDuration;
+        enemy.nextAttack = enemy.dashUntil + DASH_ENEMY_RULES.cooldown;
       }
       if (enemy.behavior === "dash" && now < enemy.warningUntil) {
         enemy.vx = 0;
       } else if (enemy.behavior === "dash" && now < enemy.dashUntil) {
         enemy.vx = Math.sign(distance) * 430;
       } else {
-        const speed = enemy.kind === "sprinter" ? 230 : 88;
+        const speed = enemy.behavior === "dash" ? DASH_ENEMY_RULES.walkSpeed : 88;
         enemy.vx = Math.abs(distance) > 58 ? Math.sign(distance) * speed : 0;
       }
-      if (sameLane && Math.abs(distance) <= 58 && now >= enemy.nextAttack) {
-        enemy.nextAttack = now + (enemy.kind === "sprinter" ? 760 : 1120);
-        damagePlayer(enemy.kind === "shield" ? 18 : 12, now);
+      if (sameLane && Math.abs(distance) <= DASH_ENEMY_RULES.meleeRange && now >= enemy.nextAttack) {
+        enemy.nextAttack = now + (enemy.behavior === "dash" ? DASH_ENEMY_RULES.meleeCooldown : 1120);
+        damagePlayer(enemy.behavior === "dash" ? DASH_ENEMY_RULES.meleeDamage : 12, now);
       }
     } else {
       enemy.vx = approach(enemy.vx, 0, 700 * dt);
@@ -1113,6 +1194,129 @@ function updateCheckpoint(now) {
   updateHud();
 }
 
+function createBossState(now) {
+  return {
+    hp: 120,
+    maxHp: 120,
+    startedAt: now,
+    nextBeatAt: now + 1200,
+    beatIndex: 0,
+    notes: [],
+    combo: 0,
+    lastGrade: "",
+    gradeUntil: 0,
+    hitFlashUntil: 0,
+    attackUntil: 0,
+    defeated: false,
+  };
+}
+
+function startBossBattle(now = performance.now()) {
+  state.mode = "boss";
+  state.boss = createBossState(now);
+  state.attacks = [];
+  state.projectiles = [];
+  state.enemyProjectiles = [];
+  state.enemyAreas = [];
+  state.pickups = [];
+  state.hat = null;
+  state.cameraX = 0;
+  clearInputState();
+  player.facing = 1;
+  player.vx = 0;
+  player.vy = 0;
+  player.slam = false;
+  setCrouching(false);
+  player.hp = Math.max(player.hp, 70);
+  state.message = "БОСС · ПОПАДАЙ В РИТМ НА J";
+  state.messageUntil = now + 1600;
+  state.running = true;
+  state.lastTime = now;
+  updateHud();
+}
+
+function updateBoss(dt, now) {
+  const boss = state.boss;
+  if (!boss || boss.defeated) return;
+  while (now + BOSS_NOTE_TRAVEL >= boss.nextBeatAt) {
+    const patternStep = boss.beatIndex % 8;
+    if (patternStep < 5) {
+      boss.notes.push({
+        hitAt: boss.nextBeatAt,
+        hit: false,
+        missed: false,
+      });
+    }
+    boss.nextBeatAt += patternStep === 4 ? 820 : 360;
+    boss.beatIndex += 1;
+  }
+
+  for (const note of boss.notes) {
+    if (!note.hit && !note.missed && now - note.hitAt > BOSS_HIT_WINDOW) {
+      note.missed = true;
+      boss.combo = 0;
+      boss.lastGrade = "MISS";
+      boss.gradeUntil = now + 520;
+      boss.attackUntil = now + 220;
+      damageBossPlayer(8, now);
+    }
+  }
+  boss.notes = boss.notes.filter((note) => now - note.hitAt < 420 && !note.hit);
+}
+
+function bossHit(now = performance.now()) {
+  const boss = state.boss;
+  if (!boss || boss.defeated) return;
+  let best = null;
+  let bestDelta = Infinity;
+  for (const note of boss.notes) {
+    if (note.hit || note.missed) continue;
+    const delta = Math.abs(note.hitAt - now);
+    if (delta < bestDelta) {
+      best = note;
+      bestDelta = delta;
+    }
+  }
+  if (!best || bestDelta > BOSS_HIT_WINDOW) {
+    boss.combo = 0;
+    boss.lastGrade = "РАНО";
+    boss.gradeUntil = now + 420;
+    damageBossPlayer(3, now);
+    return;
+  }
+  best.hit = true;
+  boss.combo += 1;
+  const perfect = bestDelta <= 70;
+  const damage = perfect ? 6 + Math.min(5, Math.floor(boss.combo / 4)) : 4;
+  boss.hp = Math.max(0, boss.hp - damage);
+  boss.hitFlashUntil = now + 120;
+  boss.lastGrade = perfect ? "PERFECT" : "HIT";
+  boss.gradeUntil = now + 520;
+  playSound("tongue");
+  if (boss.hp <= 0) winBoss(now);
+}
+
+function damageBossPlayer(amount, now) {
+  player.hp = Math.max(0, player.hp - amount);
+  player.invulnerableUntil = now + 180;
+  playSound("hurt");
+  updateHud();
+  if (player.hp <= 0) {
+    state.running = false;
+    ui.defeat.showModal();
+  }
+}
+
+function winBoss(now) {
+  const boss = state.boss;
+  boss.defeated = true;
+  boss.lastGrade = "БOСС ПОВЕРЖЕН";
+  boss.gradeUntil = now + 2400;
+  state.message = "ПОБЕДА · ПЕРВЫЙ ПРОТОТИП ПРОЙДЕН";
+  state.messageUntil = now + 2400;
+  playSound("checkpoint");
+}
+
 function spawnDust(x, y, count, power) {
   for (let i = 0; i < count; i += 1) {
     state.particles.push({
@@ -1140,6 +1344,10 @@ function updateParticles(dt) {
 
 function draw(now) {
   ctx.clearRect(0, 0, W, H);
+  if (state.mode === "boss") {
+    drawBoss(now);
+    return;
+  }
   ctx.save();
   const worldY = mobileLandscapeQuery?.matches ? MOBILE_WORLD_Y : 0;
   ctx.translate(-Math.round(state.cameraX), worldY);
@@ -1168,6 +1376,156 @@ function draw(now) {
     ctx.textAlign = "center";
     ctx.fillText(state.message, W / 2, 120);
   }
+}
+
+function drawBoss(now) {
+  const boss = state.boss || createBossState(now);
+  ctx.fillStyle = "#070709";
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#d2a927";
+  ctx.fillRect(0, 170, W, 210);
+  ctx.strokeStyle = "rgba(89,68,14,.75)";
+  ctx.lineWidth = 2;
+  for (let x = 0; x < W; x += 80) {
+    ctx.beginPath();
+    ctx.moveTo(x, 170);
+    ctx.lineTo(x, 380);
+    ctx.stroke();
+  }
+  for (let y = 170; y <= 380; y += 52) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#111113";
+  ctx.fillRect(0, 380, W, 86);
+  ctx.fillStyle = "#d9ad42";
+  ctx.fillRect(0, 380, W, 4);
+
+  const bossCx = W - 200;
+  const bossCy = 306 + Math.sin(now / 180) * 4;
+  ctx.fillStyle = "#101012";
+  ctx.beginPath();
+  ctx.arc(bossCx, bossCy, 58, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = now < boss.hitFlashUntil ? "#ffffff" : "#f1e6c5";
+  ctx.lineWidth = 6;
+  ctx.stroke();
+  ctx.fillStyle = "#f1e6c5";
+  ctx.beginPath();
+  ctx.arc(bossCx - 18, bossCy - 18, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#08090a";
+  ctx.font = "bold 24px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("O", bossCx - 18, bossCy - 10);
+  ctx.fillStyle = "#090909";
+  ctx.fillRect(bossCx - 24, bossCy + 24, 48, 7);
+  if (now < boss.attackUntil) {
+    ctx.strokeStyle = "#e75c49";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(bossCx, bossCy, 78, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  drawPlayerAvatar(185, 326, now);
+
+  ctx.fillStyle = "rgba(10,10,12,.85)";
+  ctx.fillRect(90, 64, W - 180, 36);
+  ctx.strokeStyle = "#625b49";
+  ctx.strokeRect(90, 64, W - 180, 36);
+  ctx.fillStyle = "#d74742";
+  ctx.fillRect(94, 68, (W - 188) * (boss.hp / boss.maxHp), 28);
+  ctx.fillStyle = "#f4ecd5";
+  ctx.font = "bold 17px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("БОСС: САД ЗИМНЕЙ МАМБЫ", W / 2, 89);
+
+  const lineX = 250;
+  const laneY = 450;
+  ctx.strokeStyle = "#f0d06c";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(lineX, laneY - 42);
+  ctx.lineTo(lineX, laneY + 42);
+  ctx.stroke();
+  ctx.fillStyle = "#f4ecd5";
+  ctx.font = "bold 15px monospace";
+  ctx.fillText("ЖМИ J В ЛИНИЮ", lineX, laneY - 58);
+
+  ctx.strokeStyle = "#625b49";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(lineX, laneY);
+  ctx.lineTo(W - 95, laneY);
+  ctx.stroke();
+
+  for (const note of boss.notes) {
+    if (note.hit) continue;
+    const x = lineX + (note.hitAt - now) * 0.34;
+    if (x < lineX - 60 || x > W + 40) continue;
+    ctx.fillStyle = note.missed ? "#3b2222" : "#d74742";
+    ctx.beginPath();
+    ctx.arc(x, laneY, 17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#f0d06c";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  if (boss.gradeUntil > now) {
+    ctx.fillStyle = boss.lastGrade === "MISS" || boss.lastGrade === "РАНО" ? "#e75c49" : "#f0d06c";
+    ctx.font = "bold 30px monospace";
+    ctx.fillText(boss.lastGrade, W / 2, 140);
+  }
+  ctx.fillStyle = "#f4ecd5";
+  ctx.font = "bold 16px monospace";
+  ctx.fillText(`КОМБО: ${boss.combo}`, W / 2, 502);
+
+  if (state.message && now < state.messageUntil) {
+    ctx.fillStyle = "rgba(10,10,12,.9)";
+    ctx.fillRect(W / 2 - 260, 108, 520, 44);
+    ctx.strokeStyle = "#d9ad42";
+    ctx.strokeRect(W / 2 - 260, 108, 520, 44);
+    ctx.fillStyle = "#fff1b7";
+    ctx.font = "bold 17px monospace";
+    ctx.fillText(state.message, W / 2, 136);
+  }
+}
+
+function drawPlayerAvatar(centerX, centerY, now) {
+  ctx.save();
+  const bob = Math.sin(now / 160) * 3;
+  ctx.translate(centerX, centerY + bob);
+  ctx.fillStyle = "#08090a";
+  ctx.beginPath();
+  ctx.arc(0, 0, 31, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#343434";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#f1e6c5";
+  ctx.beginPath();
+  ctx.arc(14, -8, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#08090a";
+  ctx.font = "bold 15px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("8", 14, -3);
+  ctx.fillStyle = "#050506";
+  ctx.fillRect(3, 7, 20, 11);
+  ctx.fillStyle = "#d83c3e";
+  ctx.fillRect(8, 13, 14, 7);
+  ctx.fillStyle = "#171719";
+  ctx.fillRect(-31, -30, 62, 8);
+  ctx.fillRect(-20, -39, 39, 12);
+  ctx.strokeStyle = "#cbbd92";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-31, -30, 62, 8);
+  ctx.restore();
 }
 
 function drawBackground() {

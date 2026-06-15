@@ -55,6 +55,10 @@ button:hover {
   font-size: 25px;
 }
 
+#controlsSettingsButton {
+  display: none;
+}
+
 #game-root {
   display: grid;
   place-items: center;
@@ -91,6 +95,11 @@ button:hover {
 
 .start-screen.is-hidden {
   display: none;
+}
+
+.start-screen:not(.is-hidden) ~ #mobileControls,
+.start-screen:not(.is-hidden) ~ #controlEditor {
+  display: none !important;
 }
 
 .start-content {
@@ -511,6 +520,10 @@ dialog h2 {
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  #controlsSettingsButton {
+    display: block;
+  }
+
   #game-root canvas {
     width: 100vw !important;
     height: 100vh !important;
@@ -635,31 +648,31 @@ dialog h2 {
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 390px) {
   #mobileControls .move-button {
-    width: 72px !important;
-    min-width: 72px !important;
-    height: 72px !important;
-    min-height: 72px !important;
+    width: calc(var(--control-size, 54) * 1px) !important;
+    min-width: calc(var(--control-size, 54) * 1px) !important;
+    height: calc(var(--control-size, 54) * 1px) !important;
+    min-height: calc(var(--control-size, 54) * 1px) !important;
   }
 
   #mobileControls .move-button[data-code="ArrowRight"] {
-    left: calc(max(8vw, env(safe-area-inset-left)) + 100px) !important;
+    left: calc(var(--control-x, 50) * 1vw) !important;
   }
 
   #mobileControls .tongue-button,
   #mobileControls .jump-button {
-    width: 70px !important;
-    min-width: 70px !important;
-    height: 70px !important;
-    min-height: 70px !important;
+    width: calc(var(--control-size, 54) * 1px) !important;
+    min-width: calc(var(--control-size, 54) * 1px) !important;
+    height: calc(var(--control-size, 54) * 1px) !important;
+    min-height: calc(var(--control-size, 54) * 1px) !important;
   }
 
   #mobileControls .crouch-button,
   #mobileControls .action-button[data-code="KeyK"],
   #mobileControls .slam-button,
   #mobileControls .action-button[data-code="KeyL"] {
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    width: calc(var(--control-size, 54) * 1px) !important;
+    min-width: calc(var(--control-size, 54) * 1px) !important;
+    height: calc(var(--control-size, 54) * 1px) !important;
+    min-height: calc(var(--control-size, 54) * 1px) !important;
   }
 }
