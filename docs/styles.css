@@ -227,9 +227,9 @@ dialog h2 {
   .mobile-controls {
     position: fixed;
     z-index: 6;
-    right: max(22px, env(safe-area-inset-right));
+    right: max(18px, env(safe-area-inset-right));
     bottom: max(16px, env(safe-area-inset-bottom));
-    left: max(22px, env(safe-area-inset-left));
+    left: max(18px, env(safe-area-inset-left));
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -238,17 +238,17 @@ dialog h2 {
 
   .movement-controls {
     display: flex;
-    gap: 12px;
-    padding-left: 8px;
+    gap: 14px;
+    padding-left: 10px;
     padding-bottom: 2px;
     pointer-events: auto;
   }
 
   .action-controls {
     display: grid;
-    grid-template-columns: 48px 48px 72px 72px;
-    grid-template-rows: repeat(3, 42px);
-    gap: 7px;
+    grid-template-columns: 46px 72px 72px 46px;
+    grid-template-rows: repeat(3, 44px);
+    gap: 7px 8px;
     pointer-events: auto;
   }
 
@@ -283,7 +283,7 @@ dialog h2 {
     min-height: 74px;
     border-width: 2px;
     font-size: 34px;
-    background: rgba(18, 18, 20, 0.44);
+    background: rgba(18, 18, 20, 0.36);
   }
 
   .utility-button,
@@ -318,13 +318,13 @@ dialog h2 {
   }
 
   .crouch-button {
-    grid-column: 2;
-    grid-row: 3;
+    grid-column: 4;
+    grid-row: 1;
   }
 
   .tongue-button {
-    grid-column: 4;
-    grid-row: 1 / span 2;
+    grid-column: 2;
+    grid-row: 2 / span 2;
     align-self: center;
     border-width: 2px;
     border-color: rgba(240, 208, 108, 0.76);
@@ -333,16 +333,16 @@ dialog h2 {
 
   .action-button[data-code="KeyL"] {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
   }
 
   .action-button[data-code="KeyK"] {
-    grid-column: 2;
+    grid-column: 4;
     grid-row: 2;
   }
 
   .slam-button {
-    grid-column: 1;
+    grid-column: 4;
     grid-row: 3;
     border-color: rgba(240, 208, 108, 0.54);
   }
@@ -433,9 +433,9 @@ dialog h2 {
   }
 
   .action-controls {
-    grid-template-columns: 42px 42px 62px 62px;
-    grid-template-rows: repeat(3, 36px);
-    gap: 6px;
+    grid-template-columns: 40px 62px 62px 40px;
+    grid-template-rows: repeat(3, 37px);
+    gap: 6px 7px;
   }
 
   .utility-button,

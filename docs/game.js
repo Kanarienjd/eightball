@@ -12,6 +12,7 @@ const PLAYER_SHOT_SPEED = 780;
 const PLAYER_SHOT_RANGE = 900;
 const ENEMY_SHOT_SPEED = 340;
 const ENEMY_SHOT_RANGE = 1500;
+const MOBILE_WORLD_Y = -92;
 
 const ui = {
   start: document.getElementById("startScreen"),
@@ -23,6 +24,8 @@ const ui = {
   pause: document.getElementById("pauseDialog"),
   defeat: document.getElementById("defeatDialog"),
 };
+
+const mobileLandscapeQuery = window.matchMedia?.("(hover: none) and (pointer: coarse) and (orientation: landscape)");
 
 const keys = new Set();
 const pressed = new Set();
@@ -1016,7 +1019,8 @@ function updateParticles(dt) {
 function draw(now) {
   ctx.clearRect(0, 0, W, H);
   ctx.save();
-  ctx.translate(-Math.round(state.cameraX), 0);
+  const worldY = mobileLandscapeQuery?.matches ? MOBILE_WORLD_Y : 0;
+  ctx.translate(-Math.round(state.cameraX), worldY);
   drawBackground();
   drawPlatforms();
   drawObstacles();
