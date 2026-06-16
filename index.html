@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Eight Ball: Combat Lab</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main id="game-root" aria-label="Eight Ball: Combat Lab">
+      <canvas id="game" width="960" height="540"></canvas>
+    </main>
+
+    <section class="start-screen" id="startScreen">
+      <div class="start-content">
+        <p class="eyebrow">Первый боевой прототип</p>
+        <h1>Eight Ball:<br>Combat Lab</h1>
+        <div class="menu-actions">
+          <button class="primary" id="startButton">Начать</button>
+          <button class="icon-button" id="fullscreenButton" title="Полноэкранный режим" aria-label="Полноэкранный режим">⛶</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="hud" id="hud" hidden>
+      <div class="meter">
+        <span>HP</span>
+        <div class="bar"><i id="healthBar"></i></div>
+        <b id="healthText">100</b>
+      </div>
+      <div class="status">
+        <span id="checkpointText">Тренировочный зал</span>
+        <span id="ammoText">Плевки: 3</span>
+      </div>
+      <button class="icon-button" id="pauseButton" title="Пауза" aria-label="Пауза">Ⅱ</button>
+      <button class="icon-button" id="controlsSettingsButton" title="Настроить управление" aria-label="Настроить управление">⚙</button>
+      <button class="icon-button" id="gameFullscreenButton" title="Полноэкранный режим" aria-label="Полноэкранный режим">⛶</button>
+    </div>
+
+    <div class="mobile-controls" id="mobileControls" aria-label="Сенсорное управление">
+      <div class="movement-controls">
+        <button class="touch-button move-button" data-code="ArrowLeft" aria-label="Движение влево">←</button>
+        <button class="touch-button move-button" data-code="ArrowRight" aria-label="Движение вправо">→</button>
+      </div>
+      <div class="action-controls">
+        <button class="touch-button utility-button jump-button" data-code="ArrowUp" aria-label="Прыжок">
+          <span class="control-icon">↑</span><span class="control-label">Прыжок</span>
+        </button>
+        <button class="touch-button primary-action-button tongue-button" data-code="KeyJ">
+          <span class="control-icon">J</span><span class="control-label">Удар</span>
+        </button>
+        <button class="touch-button utility-button crouch-button" data-code="ArrowDown" aria-label="Присесть или спрыгнуть">
+          <span class="control-icon">↓</span><span class="control-label">Присесть</span>
+        </button>
+        <button class="touch-button action-button" data-code="KeyL">
+          <span class="control-icon">L</span><span class="control-label">Плевок</span>
+        </button>
+        <button class="touch-button action-button" data-code="KeyK">
+          <span class="control-icon">K</span><span class="control-label">Шляпа</span>
+        </button>
+        <button class="touch-button action-button slam-button" data-action="slam" aria-label="Удар вниз">
+          <span class="control-icon">↓J</span><span class="control-label">Вниз</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="control-editor" id="controlEditor" hidden>
+      <span>Перетащи кнопки как удобно</span>
+      <button class="primary" id="controlsDoneButton">Готово</button>
+      <button id="controlsResetButton">Сброс</button>
+    </div>
+
+    <aside class="rotate-screen" aria-live="polite">
+      <div class="phone-shape" aria-hidden="true"></div>
+      <strong>Поверните телефон</strong>
+      <span>Игра работает в горизонтальном режиме</span>
+    </aside>
+
+    <dialog id="pauseDialog">
+      <h2>Пауза</h2>
+      <div class="dialog-actions">
+        <button class="primary" id="resumeButton">Продолжить</button>
+        <button id="pauseRestartButton">Начать заново</button>
+      </div>
+    </dialog>
+
+    <dialog id="defeatDialog">
+      <h2>Герой повержен</h2>
+      <p>Можно сразу вернуться к последнему сохранённому участку.</p>
+      <div class="dialog-actions">
+        <button class="primary" id="retryButton">Повторить секцию</button>
+        <button id="restartButton">Начать заново</button>
+      </div>
+    </dialog>
+
+    <dialog id="victoryDialog">
+      <h2>Тест пройден</h2>
+      <p>Босс повержен. Можно пройти прототип целиком ещё раз.</p>
+      <div class="dialog-actions">
+        <button class="primary" id="victoryRestartButton">Начать заново</button>
+      </div>
+    </dialog>
+
+    <script src="./game.js"></script>
+  </body>
+</html>
