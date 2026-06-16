@@ -8,7 +8,7 @@ const WORLD_W = 5000;
 const GROUND = 470;
 const CEILING = 22;
 const SAVE_KEY = "eight-ball-prototype-v2";
-const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v1";
+const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v2";
 const PLAYER_SHOT_SPEED = 780;
 const PLAYER_SHOT_RANGE = 900;
 const ENEMY_SHOT_SPEED = 340;
@@ -45,6 +45,7 @@ const ui = {
   checkpoint: document.getElementById("checkpointText"),
   pause: document.getElementById("pauseDialog"),
   defeat: document.getElementById("defeatDialog"),
+  victory: document.getElementById("victoryDialog"),
 };
 
 const mobileLandscapeQuery = window.matchMedia?.("(hover: none) and (pointer: coarse) and (orientation: landscape)");
@@ -93,7 +94,7 @@ const enemyPlan = [
   { x: 2795, y: 180 - 52, kind: "high", hp: 2, ranged: true, behavior: "crouchShooter", activationX: 1680, deactivationX: 2920, arenaMin: 2730, arenaMax: 2910 },
   { x: 2960, y: GROUND - 52, kind: "shield", hp: 5, armored: true, behavior: "heavy", activationX: 2700, deactivationX: 3300, arenaMin: 2780, arenaMax: 3240 },
   { x: 3695, y: 430 - 52, kind: "high", hp: 2, ranged: true, dropsHealth: true, behavior: "turret", gatekeeper: true, arenaMin: 3650, arenaMax: 3835 },
-  { x: 4100, y: GROUND - 52, kind: "sprinter", hp: 3, behavior: "dash", arenaMin: 3622, arenaMax: 4420 },
+  { x: 4100, y: GROUND - 52, kind: "sprinter", hp: 3, behavior: "dash", arenaMin: 3560, arenaMax: 4420 },
 ];
 
 const instructions = [
@@ -347,6 +348,17 @@ function finishControlEdit() {
 function resetControlLayout() {
   localStorage.removeItem(CONTROL_LAYOUT_KEY);
   applyControlLayout(defaultControlLayout);
+}
+
+function resetEnemyCombatState(enemy, now) {
+  enemy.nextAttack = now;
+  enemy.pendingShotAt = 0;
+  enemy.pendingMeleeAt = 0;
+  enemy.pendingAreaAt = 0;
+  enemy.burstShotsLeft = 0;
+  enemy.burstNextShotAt = 0;
+  enemy.dashUntil = 0;
+  enemy.warningUntil = 0;
 }
 
 function supportedPlatformAt(x, width, preferredY = Infinity) {
@@ -1162,6 +1174,11 @@ function openDoor() {
   if (state.doorOpen) return;
   state.doorOpen = true;
   state.doorOpenAt = performance.now();
+  for (const enemy of state.enemies) {
+    if (!enemy.alive || enemy.behavior !== "dash") continue;
+    resetEnemyCombatState(enemy, state.doorOpenAt);
+    enemy.passive = false;
+  }
   state.message = "ЦЕЛЬ УНИЧТОЖЕНА · ДВЕРЬ ОТКРЫТА";
   state.messageUntil = state.doorOpenAt + 1700;
   playSound("checkpoint");
@@ -1314,7 +1331,9 @@ function winBoss(now) {
   boss.gradeUntil = now + 2400;
   state.message = "ПОБЕДА · ПЕРВЫЙ ПРОТОТИП ПРОЙДЕН";
   state.messageUntil = now + 2400;
+  state.running = false;
   playSound("checkpoint");
+  ui.victory.showModal();
 }
 
 function spawnDust(x, y, count, power) {
@@ -1896,6 +1915,12 @@ document.getElementById("restartButton").addEventListener("click", () => {
   state.running = true;
   state.lastTime = performance.now();
 });
+document.getElementById("victoryRestartButton").addEventListener("click", () => {
+  ui.victory.close();
+  resetWorld(false);
+  state.running = true;
+  state.lastTime = performance.now();
+});
 
 function bindTouchActivation(id, handler) {
   const element = document.getElementById(id);
@@ -1928,6 +1953,12 @@ bindTouchActivation("retryButton", () => {
 });
 bindTouchActivation("restartButton", () => {
   if (ui.defeat.open) ui.defeat.close();
+  resetWorld(false);
+  state.running = true;
+  state.lastTime = performance.now();
+});
+bindTouchActivation("victoryRestartButton", () => {
+  if (ui.victory.open) ui.victory.close();
   resetWorld(false);
   state.running = true;
   state.lastTime = performance.now();
