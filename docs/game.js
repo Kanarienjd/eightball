@@ -8,7 +8,7 @@ const WORLD_W = 5000;
 const GROUND = 470;
 const CEILING = 22;
 const SAVE_KEY = "eight-ball-prototype-v2";
-const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v3";
+const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v4";
 const PLAYER_SHOT_SPEED = 780;
 const PLAYER_SHOT_RANGE = 900;
 const ENEMY_SHOT_SPEED = 340;
@@ -62,9 +62,9 @@ const defaultControlLayout = {
   attack: { x: 75, y: 79, size: 82 },
   jump: { x: 84, y: 68, size: 82 },
   crouch: { x: 92, y: 60, size: 50 },
-  hat: { x: 91, y: 73, size: 50 },
+  hat: { x: 92, y: 73, size: 50 },
   slam: { x: 90, y: 86, size: 50 },
-  spit: { x: 83, y: 84, size: 50 },
+  spit: { x: 83, y: 86, size: 50 },
 };
 const platforms = [
   { x: 0, y: GROUND, w: 1740, h: 70 },
@@ -94,7 +94,7 @@ const enemyPlan = [
   { x: 2795, y: 180 - 52, kind: "high", hp: 2, ranged: true, behavior: "crouchShooter", activationX: 1680, deactivationX: 2920, arenaMin: 2730, arenaMax: 2910 },
   { x: 2960, y: GROUND - 52, kind: "shield", hp: 5, armored: true, behavior: "heavy", activationX: 2700, deactivationX: 3300, arenaMin: 2780, arenaMax: 3240 },
   { x: 3695, y: 430 - 52, kind: "high", hp: 2, ranged: true, dropsHealth: true, behavior: "turret", gatekeeper: true, arenaMin: 3650, arenaMax: 3835 },
-  { x: 4100, y: GROUND - 52, kind: "sprinter", hp: 3, behavior: "dash", arenaMin: 3560, arenaMax: 4420 },
+  { x: 4100, y: GROUND - 52, kind: "sprinter", hp: 3, behavior: "dash", arenaMin: 2570, arenaMax: 4420 },
 ];
 
 const instructions = [
@@ -1551,16 +1551,16 @@ function drawBackground() {
   ctx.fillStyle = "#09090b";
   ctx.fillRect(state.cameraX, 0, W, H);
   ctx.fillStyle = "#d2a927";
-  ctx.fillRect(0, 210, WORLD_W, 260);
+  ctx.fillRect(0, 0, WORLD_W, GROUND);
   ctx.strokeStyle = "rgba(89,68,14,.75)";
   ctx.lineWidth = 2;
   for (let x = 0; x < WORLD_W; x += 96) {
     ctx.beginPath();
-    ctx.moveTo(x, 210);
+    ctx.moveTo(x, 0);
     ctx.lineTo(x, GROUND);
     ctx.stroke();
   }
-  for (let y = 210; y <= GROUND; y += 65) {
+  for (let y = 0; y <= GROUND; y += 65) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(WORLD_W, y);

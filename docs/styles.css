@@ -644,6 +644,14 @@ dialog h2 {
     min-height: calc(var(--control-size, 54) * 1px) !important;
     transform: translate(-50%, -50%) !important;
   }
+
+  #mobileControls .move-button[data-code="ArrowLeft"],
+  #mobileControls .move-button[data-code="ArrowRight"] {
+    left: calc(var(--control-x, 50) * 1vw) !important;
+    top: calc(var(--control-y, 50) * 1vh) !important;
+    right: auto !important;
+    bottom: auto !important;
+  }
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 390px) {
