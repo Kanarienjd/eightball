@@ -8,7 +8,7 @@ const WORLD_W = 5000;
 const GROUND = 470;
 const CEILING = 22;
 const SAVE_KEY = "eight-ball-prototype-v2";
-const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v2";
+const CONTROL_LAYOUT_KEY = "eight-ball-control-layout-v3";
 const PLAYER_SHOT_SPEED = 780;
 const PLAYER_SHOT_RANGE = 900;
 const ENEMY_SHOT_SPEED = 340;
@@ -64,7 +64,7 @@ const defaultControlLayout = {
   crouch: { x: 92, y: 60, size: 50 },
   hat: { x: 91, y: 73, size: 50 },
   slam: { x: 90, y: 86, size: 50 },
-  spit: { x: 70, y: 86, size: 50 },
+  spit: { x: 83, y: 84, size: 50 },
 };
 const platforms = [
   { x: 0, y: GROUND, w: 1740, h: 70 },
