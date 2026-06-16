@@ -101,8 +101,8 @@ const instructions = [
   [180, "ДВИЖЕНИЕ", "A / D и W / ↑"],
   [530, "ЯЗЫК", "быстрый удар: J"],
   [1130, "ДВОЙНОЙ ПРЫЖОК", "нажми W / ↑ ещё раз в воздухе"],
-  [1660, "СТРЕЛЯЙ", "дальний выстрел: L"],
-  [2670, "ТЯЖЁЛЫЙ ВРАГ", "сломай защиту: в прыжке ↓ + J"],
+  [2100, "СТРЕЛЯЙ", "дальний выстрел: L"],
+  [3130, "ТЯЖЁЛЫЙ ВРАГ", "сломай защиту: в прыжке ↓ + J"],
   [3460, "МЕТНИ ШЛЯПУ", "возвратная атака: K"],
   [4350, "ПРИСЯДЬ", "держи S / ↓ и проползи под трубой"],
   [4800, "ЧЕКПОИНТ", "подготовка к боссу"],
@@ -993,9 +993,25 @@ function updateAttacks(dt) {
 function hitEnemies(box, attack, damage, kind, direction, now) {
   for (const enemy of state.enemies) {
     if (!enemy.alive || attack.hit.has(enemy) || !rectsOverlap(box, enemy)) continue;
+    if (enemyProtectedByClosedDoor(enemy, kind)) continue;
     attack.hit.add(enemy);
     damageEnemy(enemy, damage, kind, direction || Math.sign(enemy.x - player.x), now);
   }
+}
+
+function enemyProtectedByClosedDoor(enemy, attackKind) {
+  if (state.doorOpen || attackKind === "hat") return false;
+  const playerCenterX = player.x + player.w / 2;
+  const playerCenterY = player.y + player.h / 2;
+  const enemyCenterX = enemy.x + enemy.w / 2;
+  const enemyCenterY = enemy.y + enemy.h / 2;
+  return obstacles.some((obstacle) => {
+    const oppositeSides =
+      (playerCenterX <= obstacle.x && enemyCenterX >= obstacle.x + obstacle.w) ||
+      (enemyCenterX <= obstacle.x && playerCenterX >= obstacle.x + obstacle.w);
+    return oppositeSides ||
+      lineIntersectsRect(playerCenterX, playerCenterY, enemyCenterX, enemyCenterY, obstacle);
+  });
 }
 
 function updateProjectiles(dt, now) {
@@ -1548,19 +1564,20 @@ function drawPlayerAvatar(centerX, centerY, now) {
 }
 
 function drawBackground() {
+  const backgroundBottom = H + Math.abs(MOBILE_WORLD_Y) + 120;
   ctx.fillStyle = "#09090b";
   ctx.fillRect(state.cameraX, 0, W, H);
   ctx.fillStyle = "#d2a927";
-  ctx.fillRect(0, 0, WORLD_W, GROUND);
+  ctx.fillRect(0, 0, WORLD_W, backgroundBottom);
   ctx.strokeStyle = "rgba(89,68,14,.75)";
   ctx.lineWidth = 2;
   for (let x = 0; x < WORLD_W; x += 96) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, GROUND);
+    ctx.lineTo(x, backgroundBottom);
     ctx.stroke();
   }
-  for (let y = 0; y <= GROUND; y += 65) {
+  for (let y = 0; y <= backgroundBottom; y += 65) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(WORLD_W, y);
@@ -1838,14 +1855,25 @@ function circleRectOverlap(circle, rect) {
 }
 
 function lineIntersectsRect(x1, y1, x2, y2, rect) {
-  const steps = 12;
-  for (let i = 1; i <= steps; i += 1) {
-    const t = i / steps;
-    const x = x1 + (x2 - x1) * t;
-    const y = y1 + (y2 - y1) * t;
-    if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) return true;
+  let tMin = 0;
+  let tMax = 1;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const checks = [
+    [-dx, x1 - rect.x],
+    [dx, rect.x + rect.w - x1],
+    [-dy, y1 - rect.y],
+    [dy, rect.y + rect.h - y1],
+  ];
+  for (const [p, q] of checks) {
+    if (p === 0 && q < 0) return false;
+    if (p === 0) continue;
+    const ratio = q / p;
+    if (p < 0) tMin = Math.max(tMin, ratio);
+    else tMax = Math.min(tMax, ratio);
+    if (tMin > tMax) return false;
   }
-  return false;
+  return true;
 }
 
 function clamp(value, min, max) {
